@@ -44,7 +44,7 @@
     /* 단원 선택 카드 */
     .unit-grid { display: flex; flex-direction: column; gap: 8px; margin-bottom: 15px; }
     .unit-card {
-      padding: 12px;
+      padding: 14px 12px;
       background: #F9FBE7;
       border: 2px solid #C8E6C9;
       border-radius: 12px;
@@ -53,9 +53,18 @@
       cursor: pointer;
       text-align: left;
       transition: all 0.2s;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
     }
     .unit-card:hover { background: #E8F5E9; border-color: var(--primary); }
 
+    /* 이름 입력부 */
+    .name-box { display: flex; gap: 8px; margin-bottom: 10px; }
+    #player-name { flex: 1; padding: 12px; border: 2px solid #C8E6C9; border-radius: 12px; font-size: 1rem; outline: none; }
+    #player-name:disabled { background-color: #EEE; color: #555; border-color: #DDD; }
+    .name-btn { padding: 0 15px; border-radius: 12px; border: 1px solid #CCC; background: #FFF; font-weight: bold; cursor: pointer; }
+    
     /* 타이머 및 문제 */
     .timer-bar { width: 100%; height: 10px; background: #EEE; border-radius: 5px; margin: 12px 0; overflow: hidden; }
     .timer-fill { height: 100%; width: 100%; background: var(--accent); transition: width 1s linear; }
@@ -63,7 +72,7 @@
     
     /* 보기 버튼 */
     .btn-grid { display: flex; flex-direction: column; gap: 8px; }
-    button {
+    .btn-grid button {
       padding: 13px;
       font-size: 1rem;
       border: 2px solid #C8E6C9;
@@ -73,8 +82,8 @@
       font-weight: bold;
       transition: all 0.2s;
     }
-    button:hover { background: #E8F5E9; border-color: var(--primary); }
-    .primary-btn { background: var(--primary); color: white; border: none; margin-top: 10px; }
+    .btn-grid button:hover { background: #E8F5E9; border-color: var(--primary); }
+    .primary-btn { background: var(--primary); color: white; border: none; margin-top: 10px; padding: 12px; border-radius: 12px; font-size: 1rem; font-weight: bold; cursor: pointer;}
 
     /* 피드백 */
     .feedback { font-weight: bold; font-size: 0.95rem; margin-top: 10px; min-height: 28px; word-break: keep-all; }
@@ -94,8 +103,13 @@
 
   <!-- 1. 시작 및 단원 선택 화면 -->
   <div id="start-screen" class="screen active">
-    <p style="margin: 6px 0; font-size: 0.95rem; color:#555;">이름을 쓰고 도전할 단원을 골라보세요!</p>
-    <input type="text" id="player-name" placeholder="이름을 입력하세요 (예: 3반 김과학)" style="width: 90%; padding: 12px; border: 2px solid #C8E6C9; border-radius: 12px; font-size: 1rem; box-sizing: border-box; outline: none;">
+    <p style="margin: 6px 0 10px 0; font-size: 0.95rem; color:#555;">이름을 적고 도전할 단원을 고르세요!</p>
+    
+    <!-- 자동 로그인(이름 기억) 영역 -->
+    <div class="name-box">
+      <input type="text" id="player-name" placeholder="이름 입력 (예: 3반 김과학)">
+      <button class="name-btn" onclick="enableNameEdit()">수정</button>
+    </div>
     
     <!-- 학기 선택 탭 -->
     <div class="tab-container">
@@ -103,7 +117,7 @@
       <button class="tab-btn active-tab" id="tab-sem2" onclick="switchSemester(2)">2학기 단원</button>
     </div>
 
-    <!-- 단원 목록 -->
+    <!-- 단원 목록 및 내 점수 표시 영역 -->
     <div class="unit-grid" id="unit-list"></div>
   </div>
 
@@ -155,92 +169,23 @@
     db = firebase.database();
   }
 
-  // 3학년 1학기 및 2학기 전 단원 교과서 핵심 퀴즈 데이터 (단원당 5문제)
+  // 문항 데이터 생략 없이 동일하게 유지
   const allUnitsData = {
     // 3학년 1학기
-    "3-1-1": {
-      title: "1학기 1. 힘과 우리 생활",
-      questions: [
-        { q: "물체를 밀거나 당길 때 나타나는 현상으로 옳은 것은?", options: ["물체의 모양이나 움직임이 변한다", "물체의 무게가 완전히 사라진다", "물체의 재료(물질)가 바뀐다"], ans: 0, exp: "정답! 힘을 주면 물체의 모양이나 움직이는 상태가 변해요." },
-        { q: "수평 잡기에서 무게가 서로 다른 두 물체를 수평으로 맞추는 방법은?", options: ["무거운 물체를 받침점에 더 가깝게 놓는다", "가벼운 물체를 받침점에 더 가깝게 놓는다", "항상 받침점에서 같은 거리에 놓는다"], ans: 0, exp: "정답! 무거운 물체를 받침점 가까이에 놓아야 수평이 맞아요." },
-        { q: "물체의 무게를 비교하고 정확하게 측정하기 위해 필요한 도구는?", options: ["돋보기", "자", "저울"], ans: 2, exp: "정답! 무게를 비교하고 정확히 잴 때는 저울을 사용해요." },
-        { q: "지레나 빗면과 같은 도구를 이용할 때의 장점은?", options: ["물체를 들어 올릴 때 드는 힘의 크기를 줄일 수 있다", "물체의 실제 무게가 가벼워진다", "물체의 크기가 작아진다"], ans: 0, exp: "정답! 도구를 이용하면 들어 올릴 때 드는 힘의 크기가 달라져요." },
-        { q: "초등학교 과학에서 물체의 무게를 나타낼 때 사용하는 단위는?", options: ["g, kg", "cm, m", "mL, L"], ans: 0, exp: "정답! 무게를 비교하는 단위로는 g(그램), kg(킬로그램)을 써요." }
-      ]
-    },
-    "3-1-2": {
-      title: "1학기 2. 동물의 생활",
-      questions: [
-        { q: "땅 위를 기어 다니며 다리가 없고 몸이 여러 개의 마디로 된 동물은?", options: ["개구리", "지렁이", "참새"], ans: 1, exp: "정답! 지렁이는 다리가 없고 기어 다니며 생활해요." },
-        { q: "물속에서 헤엄치며 아가미로 숨을 쉬고 지느러미가 있는 동물은?", options: ["붕어", "사자", "토끼"], ans: 0, exp: "정답! 붕어는 물속 환경에 알맞은 아가미와 지느러미가 있어요." },
-        { q: "사막 환경에 적응한 낙타의 특징으로 옳은 것은?", options: ["등에 영양분을 저장하는 혹이 있고 속눈썹이 길다", "지느러미가 발달했다", "몸 표면이 항상 젖어 있다"], ans: 0, exp: "정답! 등의 혹은 영양분을 저장하고 긴 속눈썹은 모래바람을 막아줘요." },
-        { q: "하늘을 날아다니는 동물의 공통적인 특징은?", options: ["날개가 있고 몸이 가볍다", "다리가 8개이다", "아가미가 있다"], ans: 0, exp: "정답! 날아다니는 동물은 날개가 있고 뼈나 몸이 가벼워요." },
-        { q: "동물의 생김새와 생활 방식이 서식지와 관련 있는 까닭은?", options: ["자신이 살아가는 환경에 알맞게 살아가기 위해", "모든 동물이 똑같은 먹이를 먹기 위해", "다른 동물과 싸우기 위해"], ans: 0, exp: "정답! 동물은 서식지 환경에 어울리는 생김새와 생활 방식을 가져요." }
-      ]
-    },
-    "3-1-3": {
-      title: "1학기 3. 식물의 생활",
-      questions: [
-        { q: "주변 식물의 잎을 관찰할 때 지켜야 할 안전 수칙으로 바른 것은?", options: ["식물을 함부로 맛보거나 만지지 않는다", "모든 잎을 꺾어서 교실로 가져온다", "맨손으로 가시를 세게 잡는다"], ans: 0, exp: "정답! 식물에는 독이 있을 수 있어 함부로 맛보지 않아요." },
-        { q: "사막에 사는 선인장의 가시는 원래 식물의 어떤 부분이 변한 것일까요?", options: ["잎", "뿌리", "꽃"], ans: 0, exp: "정답! 선인장의 가시는 물의 증발을 막기 위해 잎이 변한 거예요." },
-        { q: "부레옥잠처럼 물 위에 잎이 둥둥 떠서 사는 식물의 특징은?", options: ["잎자루에 공기주머니가 있어 물에 잘 뜬다", "물속에 완전히 잠겨 있다", "줄기가 나무처럼 두껍다"], ans: 0, exp: "정답! 공기주머니가 공기를 품어 물에 뜰 수 있어요." },
-        { q: "식물의 잎을 분류하는 기준으로 알맞은 것은?", options: ["잎의 가장자리 모양", "잎의 맛", "내가 좋아하는 정도"], ans: 0, exp: "정답! 잎의 모양, 가장자리 모양, 잎맥 등 객관적 특징으로 분류해요." },
-        { q: "열매의 갈고리를 이용해 사람 옷에 붙어 씨를 퍼뜨리는 도꼬마리를 본떠 만든 물건은?", options: ["찍찍이 테이프(벨크로)", "우산", "돋보기"], ans: 0, exp: "정답! 도꼬마리 열매의 갈고리 성질을 이용해 벨크로 테이프를 만들었어요." }
-      ]
-    },
-    "3-1-4": {
-      title: "1학기 4. 생물의 한살이",
-      questions: [
-        { q: "배추흰나비의 한살이 과정을 바르게 나타낸 것은?", options: ["알 - 애벌레 - 번데기 - 어른벌레", "알 - 번데기 - 애벌레 - 어른벌레", "애벌레 - 알 - 번데기 - 어른벌레"], ans: 0, exp: "정답! 알에서 깬 애벌레가 번데기를 거쳐 어른벌레(나비)가 돼요." },
-        { q: "씨앗이 싹트는 데 꼭 필요한 조건 두 가지는?", options: ["물과 알맞은 온도", "바람과 흙", "돌과 그늘"], ans: 0, exp: "정답! 씨앗이 싹틀 때는 물과 알맞은 온도가 꼭 필요해요." },
-        { q: "싹튼 식물이 건강하게 쑥쑥 자라는 데 필요한 조건 두 가지는?", options: ["물과 햇빛", "어둠과 추위", "비닐과 얼음"], ans: 0, exp: "정답! 식물이 자라는 데는 물과 햇빛이 필수적이에요." },
-        { q: "번데기 단계를 거치지 않는 '불완전 탈바꿈' 곤충은?", options: ["사마귀", "배추흰나비", "장수풍뎅이"], ans: 0, exp: "정답! 사마귀나 메뚜기는 번데기 단계 없이 어른벌레가 돼요." },
-        { q: "씨앗으로 번식하여 싹이 트고 꽃이 핀 뒤 열매를 맺고 일생을 마치는 과정을 무엇이라고 할까요?", options: ["한살이", "광합성", "적응"], ans: 0, exp: "정답! 생물이 태어나 자라고 자손을 남기는 과정을 '한살이'라고 해요." }
-      ]
-    },
-
+    "3-1-1": { title: "1학기 1. 힘과 우리 생활", questions: [ { q: "물체를 밀거나 당길 때 나타나는 현상으로 옳은 것은?", options: ["물체의 모양이나 움직임이 변한다", "물체의 무게가 완전히 사라진다", "물체의 재료(물질)가 바뀐다"], ans: 0, exp: "정답! 힘을 주면 물체의 모양이나 움직이는 상태가 변해요." }, { q: "수평 잡기에서 무게가 서로 다른 두 물체를 수평으로 맞추는 방법은?", options: ["무거운 물체를 받침점에 더 가깝게 놓는다", "가벼운 물체를 받침점에 더 가깝게 놓는다", "항상 받침점에서 같은 거리에 놓는다"], ans: 0, exp: "정답! 무거운 물체를 받침점 가까이에 놓아야 수평이 맞아요." }, { q: "물체의 무게를 비교하고 정확하게 측정하기 위해 필요한 도구는?", options: ["돋보기", "자", "저울"], ans: 2, exp: "정답! 무게를 비교하고 정확히 잴 때는 저울을 사용해요." }, { q: "지레나 빗면과 같은 도구를 이용할 때의 장점은?", options: ["물체를 들어 올릴 때 드는 힘의 크기를 줄일 수 있다", "물체의 실제 무게가 가벼워진다", "물체의 크기가 작아진다"], ans: 0, exp: "정답! 도구를 이용하면 들어 올릴 때 드는 힘의 크기가 달라져요." }, { q: "초등학교 과학에서 물체의 무게를 나타낼 때 사용하는 단위는?", options: ["g, kg", "cm, m", "mL, L"], ans: 0, exp: "정답! 무게를 비교하는 단위로는 g(그램), kg(킬로그램)을 써요." } ] },
+    "3-1-2": { title: "1학기 2. 동물의 생활", questions: [ { q: "땅 위를 기어 다니며 다리가 없고 몸이 여러 개의 마디로 된 동물은?", options: ["개구리", "지렁이", "참새"], ans: 1, exp: "정답! 지렁이는 다리가 없고 기어 다니며 생활해요." }, { q: "물속에서 헤엄치며 아가미로 숨을 쉬고 지느러미가 있는 동물은?", options: ["붕어", "사자", "토끼"], ans: 0, exp: "정답! 붕어는 물속 환경에 알맞은 아가미와 지느러미가 있어요." }, { q: "사막 환경에 적응한 낙타의 특징으로 옳은 것은?", options: ["등에 영양분을 저장하는 혹이 있고 속눈썹이 길다", "지느러미가 발달했다", "몸 표면이 항상 젖어 있다"], ans: 0, exp: "정답! 등의 혹은 영양분을 저장하고 긴 속눈썹은 모래바람을 막아줘요." }, { q: "하늘을 날아다니는 동물의 공통적인 특징은?", options: ["날개가 있고 몸이 가볍다", "다리가 8개이다", "아가미가 있다"], ans: 0, exp: "정답! 날아다니는 동물은 날개가 있고 뼈나 몸이 가벼워요." }, { q: "동물의 생김새와 생활 방식이 서식지와 관련 있는 까닭은?", options: ["자신이 살아가는 환경에 알맞게 살아가기 위해", "모든 동물이 똑같은 먹이를 먹기 위해", "다른 동물과 싸우기 위해"], ans: 0, exp: "정답! 동물은 서식지 환경에 어울리는 생김새와 생활 방식을 가져요." } ] },
+    "3-1-3": { title: "1학기 3. 식물의 생활", questions: [ { q: "주변 식물의 잎을 관찰할 때 지켜야 할 안전 수칙으로 바른 것은?", options: ["식물을 함부로 맛보거나 만지지 않는다", "모든 잎을 꺾어서 교실로 가져온다", "맨손으로 가시를 세게 잡는다"], ans: 0, exp: "정답! 식물에는 독이 있을 수 있어 함부로 맛보지 않아요." }, { q: "사막에 사는 선인장의 가시는 원래 식물의 어떤 부분이 변한 것일까요?", options: ["잎", "뿌리", "꽃"], ans: 0, exp: "정답! 선인장의 가시는 물의 증발을 막기 위해 잎이 변한 거예요." }, { q: "부레옥잠처럼 물 위에 잎이 둥둥 떠서 사는 식물의 특징은?", options: ["잎자루에 공기주머니가 있어 물에 잘 뜬다", "물속에 완전히 잠겨 있다", "줄기가 나무처럼 두껍다"], ans: 0, exp: "정답! 공기주머니가 공기를 품어 물에 뜰 수 있어요." }, { q: "식물의 잎을 분류하는 기준으로 알맞은 것은?", options: ["잎의 가장자리 모양", "잎의 맛", "내가 좋아하는 정도"], ans: 0, exp: "정답! 잎의 모양, 가장자리 모양, 잎맥 등 객관적 특징으로 분류해요." }, { q: "열매의 갈고리를 이용해 사람 옷에 붙어 씨를 퍼뜨리는 도꼬마리를 본떠 만든 물건은?", options: ["찍찍이 테이프(벨크로)", "우산", "돋보기"], ans: 0, exp: "정답! 도꼬마리 열매의 갈고리 성질을 이용해 벨크로 테이프를 만들었어요." } ] },
+    "3-1-4": { title: "1학기 4. 생물의 한살이", questions: [ { q: "배추흰나비의 한살이 과정을 바르게 나타낸 것은?", options: ["알 - 애벌레 - 번데기 - 어른벌레", "알 - 번데기 - 애벌레 - 어른벌레", "애벌레 - 알 - 번데기 - 어른벌레"], ans: 0, exp: "정답! 알에서 깬 애벌레가 번데기를 거쳐 어른벌레(나비)가 돼요." }, { q: "씨앗이 싹트는 데 꼭 필요한 조건 두 가지는?", options: ["물과 알맞은 온도", "바람과 흙", "돌과 그늘"], ans: 0, exp: "정답! 씨앗이 싹틀 때는 물과 알맞은 온도가 꼭 필요해요." }, { q: "싹튼 식물이 건강하게 쑥쑥 자라는 데 필요한 조건 두 가지는?", options: ["물과 햇빛", "어둠과 추위", "비닐과 얼음"], ans: 0, exp: "정답! 식물이 자라는 데는 물과 햇빛이 필수적이에요." }, { q: "번데기 단계를 거치지 않는 '불완전 탈바꿈' 곤충은?", options: ["사마귀", "배추흰나비", "장수풍뎅이"], ans: 0, exp: "정답! 사마귀나 메뚜기는 번데기 단계 없이 어른벌레가 돼요." }, { q: "씨앗으로 번식하여 싹이 트고 꽃이 핀 뒤 열매를 맺고 일생을 마치는 과정을 무엇이라고 할까요?", options: ["한살이", "광합성", "적응"], ans: 0, exp: "정답! 생물이 태어나 자라고 자손을 남기는 과정을 '한살이'라고 해요." } ] },
     // 3학년 2학기
-    "3-2-1": {
-      title: "2학기 1. 물체와 물질",
-      questions: [
-        { q: "창문이나 가위처럼 구체적인 모양이 있고 공간을 차지하는 것을 무엇이라고 할까요?", options: ["물체", "물질", "기체"], ans: 0, exp: "정답! 모양이 있고 구체적 공간을 차지하는 것을 '물체'라고 해요." },
-        { q: "물체를 만드는 재료를 무엇이라고 할까요?", options: ["물질", "무게", "부피"], ans: 0, exp: "정답! 물체를 만드는 재료를 '물질'이라고 합니다." },
-        { q: "표면에서 반짝반짝 광택이 나고 일반적으로 단단한 성질의 물질은?", options: ["고무", "금속", "나무"], ans: 1, exp: "정답! 금속은 광택이 있고 나무나 플라스틱보다 단단해요." },
-        { q: "담는 그릇에 따라 모양은 변하지만 부피는 변하지 않는 물과 같은 상태는?", options: ["고체", "액체", "기체"], ans: 1, exp: "정답! 액체는 담는 그릇에 따라 모양이 변하지만 부피는 일정해요." },
-        { q: "눈에 보이지 않고 손으로 잡을 수 없지만, 공간을 항상 가득 채우는 공기의 상태는?", options: ["고체", "액체", "기체"], ans: 2, exp: "정답! 공기처럼 담는 용기 공간을 항상 채우는 것은 '기체'입니다." }
-      ]
-    },
-    "3-2-2": {
-      title: "2학기 2. 지구와 바다",
-      questions: [
-        { q: "지구 표면에서 육지와 바다 중 면적이 더 넓은 곳은 어디일까요?", options: ["육지", "바다", "면적이 같다"], ans: 1, exp: "정답! 우주에서 본 지구는 바다가 육지보다 훨씬 넓어요." },
-        { q: "바닷물이 육지의 물과 달리 짠맛이 나는 까닭은?", options: ["소금이 많이 녹아 있어서", "설탕이 녹아 있어서", "햇빛을 많이 받아서"], ans: 0, exp: "정답! 바닷물에는 소금이 많이 녹아 있어 짠맛이 나요." },
-        { q: "바닷물이 차오르는 것을 ( ), 빠져나가는 것을 ( )이라고 합니다. 괄호 순서대로 바른 것은?", options: ["밀물 - 썰물", "썰물 - 밀물", "파도 - 해류"], ans: 0, exp: "정답! 물이 차오르는 것은 밀물, 빠지는 것은 썰물이에요." },
-        { q: "밀물 때는 물에 잠기고 썰물 때는 드러나며 다양한 생물이 사는 보물창고는?", options: ["사막", "갯벌", "빙하"], ans: 1, exp: "정답! 갯벌은 생물의 보금자리이자 바다를 정화해 주는 곳이에요." },
-        { q: "바닷가에서 파도가 오랜 시간 바위를 깎아 만든 지형이 아닌 것은?", options: ["해식 절벽", "구멍 뚫린 바위", "모래 언덕 사막"], ans: 2, exp: "정답! 사막은 비가 적게 내리는 건조한 육지 지형이에요." }
-      ]
-    },
-    "3-2-3": {
-      title: "2학기 3. 소리의 성질",
-      questions: [
-        { q: "소리가 나는 물체(소리굽쇠, 북, 목 등)의 공통적인 특징은?", options: ["색이 변한다", "떨림(진동)이 있다", "온도가 올라간다"], ans: 1, exp: "정답! 물체에서 소리가 날 때는 항상 떨림이 있어요." },
-        { q: "작은북을 세게 칠 때 나타나는 현상으로 바른 것은?", options: ["북이 크게 떨리며 큰 소리가 난다", "북이 작게 떨리며 높은 소리가 난다", "소리가 나지 않는다"], ans: 0, exp: "정답! 물체가 크게 떨릴수록 큰 소리가 나요." },
-        { q: "칼림바나 실로폰처럼 물체의 길이가 짧을수록 어떤 소리가 날까요?", options: ["높은 소리", "낮은 소리", "작은 소리"], ans: 0, exp: "정답! 음판이나 관의 길이가 짧을수록 높은 소리가 나요." },
-        { q: "소리는 어떤 상태의 물질을 통해 전달될 수 있을까요?", options: ["기체만", "고체만", "고체, 액체, 기체 모두"], ans: 2, exp: "정답! 소리는 공기뿐 아니라 물(액체), 책상(고체)을 통해서도 전달돼요." },
-        { q: "생활 속 소음을 줄이기 위해 실천할 수 있는 방법으로 알맞지 않은 것은?", options: ["집 안에서 쿵쿵 뛰어다닌다", "실내화를 신고 다닌다", "텔레비전 볼륨을 줄인다"], ans: 0, exp: "정답! 층간 소음을 줄이기 위해 집 안에서는 뛰지 않아야 해요." }
-      ]
-    },
-    "3-2-4": {
-      title: "2학기 4. 감염병과 건강한 생활",
-      questions: [
-        { q: "병원체가 우리 몸에 들어와 일으키는 병을 무엇이라고 할까요?", options: ["감염병", "찰과상", "골절"], ans: 0, exp: "정답! 병원체 침입으로 생기는 질병을 감염병이라고 해요." },
-        { q: "대표적인 감염병의 종류가 아닌 것은?", options: ["독감", "수두", "넘어져서 까진 상처"], ans: 2, exp: "정답! 다쳐서 난 상처는 병원체 감염병이 아니에요." },
-        { q: "접촉을 통한 감염병을 예방하기 위해 가장 중요한 생활 습관은?", options: ["비누로 손을 꼼꼼하게 씻기", "물건을 친구와 같이 쓰기", "손으로 눈 비비기"], ans: 0, exp: "정답! 비누로 손을 깨끗이 씻는 것이 최고의 예방법이에요." },
-        { q: "기침할 때 침방울(비말)이 다른 사람에게 튀지 않도록 하는 올바른 기침 예절은?", options: ["옷소매 위쪽으로 입과 코를 가린다", "손바닥으로 입을 막는다", "허공에 대고 크게 한다"], ans: 0, exp: "정답! 기침할 때는 손이 아닌 옷소매로 입과 코를 가려요." },
-        { q: "감염병으로부터 안전한 사회를 만들기 위한 노력이 아닌 것은?", options: ["예방접종 받기", "교실 자주 환기하기", "아플 때 사람이 많은 곳에 가기"], ans: 2, exp: "정답! 감염병 증상이 있을 때는 다른 사람을 위해 쉬어야 해요." }
-      ]
-    }
+    "3-2-1": { title: "2학기 1. 물체와 물질", questions: [ { q: "창문이나 가위처럼 구체적인 모양이 있고 공간을 차지하는 것을 무엇이라고 할까요?", options: ["물체", "물질", "기체"], ans: 0, exp: "정답! 모양이 있고 구체적 공간을 차지하는 것을 '물체'라고 해요." }, { q: "물체를 만드는 재료를 무엇이라고 할까요?", options: ["물질", "무게", "부피"], ans: 0, exp: "정답! 물체를 만드는 재료를 '물질'이라고 합니다." }, { q: "표면에서 반짝반짝 광택이 나고 일반적으로 단단한 성질의 물질은?", options: ["고무", "금속", "나무"], ans: 1, exp: "정답! 금속은 광택이 있고 나무나 플라스틱보다 단단해요." }, { q: "담는 그릇에 따라 모양은 변하지만 부피는 변하지 않는 물과 같은 상태는?", options: ["고체", "액체", "기체"], ans: 1, exp: "정답! 액체는 담는 그릇에 따라 모양이 변하지만 부피는 일정해요." }, { q: "눈에 보이지 않고 손으로 잡을 수 없지만, 공간을 항상 가득 채우는 공기의 상태는?", options: ["고체", "액체", "기체"], ans: 2, exp: "정답! 공기처럼 담는 용기 공간을 항상 채우는 것은 '기체'입니다." } ] },
+    "3-2-2": { title: "2학기 2. 지구와 바다", questions: [ { q: "지구 표면에서 육지와 바다 중 면적이 더 넓은 곳은 어디일까요?", options: ["육지", "바다", "면적이 같다"], ans: 1, exp: "정답! 우주에서 본 지구는 바다가 육지보다 훨씬 넓어요." }, { q: "바닷물이 육지의 물과 달리 짠맛이 나는 까닭은?", options: ["소금이 많이 녹아 있어서", "설탕이 녹아 있어서", "햇빛을 많이 받아서"], ans: 0, exp: "정답! 바닷물에는 소금이 많이 녹아 있어 짠맛이 나요." }, { q: "바닷물이 차오르는 것을 ( ), 빠져나가는 것을 ( )이라고 합니다. 괄호 순서대로 바른 것은?", options: ["밀물 - 썰물", "썰물 - 밀물", "파도 - 해류"], ans: 0, exp: "정답! 물이 차오르는 것은 밀물, 빠지는 것은 썰물이에요." }, { q: "밀물 때는 물에 잠기고 썰물 때는 드러나며 다양한 생물이 사는 보물창고는?", options: ["사막", "갯벌", "빙하"], ans: 1, exp: "정답! 갯벌은 생물의 보금자리이자 바다를 정화해 주는 곳이에요." }, { q: "바닷가에서 파도가 오랜 시간 바위를 깎아 만든 지형이 아닌 것은?", options: ["해식 절벽", "구멍 뚫린 바위", "모래 언덕 사막"], ans: 2, exp: "정답! 사막은 비가 적게 내리는 건조한 육지 지형이에요." } ] },
+    "3-2-3": { title: "2학기 3. 소리의 성질", questions: [ { q: "소리가 나는 물체(소리굽쇠, 북, 목 등)의 공통적인 특징은?", options: ["색이 변한다", "떨림(진동)이 있다", "온도가 올라간다"], ans: 1, exp: "정답! 물체에서 소리가 날 때는 항상 떨림이 있어요." }, { q: "작은북을 세게 칠 때 나타나는 현상으로 바른 것은?", options: ["북이 크게 떨리며 큰 소리가 난다", "북이 작게 떨리며 높은 소리가 난다", "소리가 나지 않는다"], ans: 0, exp: "정답! 물체가 크게 떨릴수록 큰 소리가 나요." }, { q: "칼림바나 실로폰처럼 물체의 길이가 짧을수록 어떤 소리가 날까요?", options: ["높은 소리", "낮은 소리", "작은 소리"], ans: 0, exp: "정답! 음판이나 관의 길이가 짧을수록 높은 소리가 나요." }, { q: "소리는 어떤 상태의 물질을 통해 전달될 수 있을까요?", options: ["기체만", "고체만", "고체, 액체, 기체 모두"], ans: 2, exp: "정답! 소리는 공기뿐 아니라 물(액체), 책상(고체)을 통해서도 전달돼요." }, { q: "생활 속 소음을 줄이기 위해 실천할 수 있는 방법으로 알맞지 않은 것은?", options: ["집 안에서 쿵쿵 뛰어다닌다", "실내화를 신고 다닌다", "텔레비전 볼륨을 줄인다"], ans: 0, exp: "정답! 층간 소음을 줄이기 위해 집 안에서는 뛰지 않아야 해요." } ] },
+    "3-2-4": { title: "2학기 4. 감염병과 건강한 생활", questions: [ { q: "병원체가 우리 몸에 들어와 일으키는 병을 무엇이라고 할까요?", options: ["감염병", "찰과상", "골절"], ans: 0, exp: "정답! 병원체 침입으로 생기는 질병을 감염병이라고 해요." }, { q: "대표적인 감염병의 종류가 아닌 것은?", options: ["독감", "수두", "넘어져서 까진 상처"], ans: 2, exp: "정답! 다쳐서 난 상처는 병원체 감염병이 아니에요." }, { q: "접촉을 통한 감염병을 예방하기 위해 가장 중요한 생활 습관은?", options: ["비누로 손을 꼼꼼하게 씻기", "물건을 친구와 같이 쓰기", "손으로 눈 비비기"], ans: 0, exp: "정답! 비누로 손을 깨끗이 씻는 것이 최고의 예방법이에요." }, { q: "기침할 때 침방울(비말)이 다른 사람에게 튀지 않도록 하는 올바른 기침 예절은?", options: ["옷소매 위쪽으로 입과 코를 가린다", "손바닥으로 입을 막는다", "허공에 대고 크게 한다"], ans: 0, exp: "정답! 기침할 때는 손이 아닌 옷소매로 입과 코를 가려요." }, { q: "감염병으로부터 안전한 사회를 만들기 위한 노력이 아닌 것은?", options: ["예방접종 받기", "교실 자주 환기하기", "아플 때 사람이 많은 곳에 가기"], ans: 2, exp: "정답! 감염병 증상이 있을 때는 다른 사람을 위해 쉬어야 해요." } ] }
   };
+
+  // 브라우저에 저장된 내 이름과 단원별 점수 불러오기 (자동 로그인)
+  let playerName = localStorage.getItem("quizPlayerName") || "";
+  let myBestScores = JSON.parse(localStorage.getItem("quizMyScores") || "{}");
 
   let currentSemester = 2;
   let selectedUnitKey = "3-2-1";
@@ -248,9 +193,24 @@
   let currentIdx = 0;
   let correctCount = 0;
   let score = 0;
-  let playerName = "";
   let timerInterval = null;
   let timeLeft = 15;
+
+  // 창이 처음 열릴 때 이름이 있으면 바로 세팅
+  window.onload = () => {
+    if (playerName) {
+      const nameInput = document.getElementById('player-name');
+      nameInput.value = playerName;
+      nameInput.disabled = true; // 이름 수정 잠금
+    }
+    renderUnitList();
+  };
+
+  function enableNameEdit() {
+    const nameInput = document.getElementById('player-name');
+    nameInput.disabled = false;
+    nameInput.focus();
+  }
 
   function showScreen(screenId) {
     document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
@@ -271,7 +231,14 @@
       if (key.startsWith(`3-${currentSemester}`)) {
         const btn = document.createElement('div');
         btn.className = "unit-card";
-        btn.innerText = "📖 " + allUnitsData[key].title;
+        
+        // 내 최고 점수가 기록되어 있다면 오른쪽에 뱃지 표시
+        let scoreBadge = "";
+        if (myBestScores[key] !== undefined) {
+          scoreBadge = `<span style="color: #E65100; font-weight: 900;">🏅 ${myBestScores[key]}점</span>`;
+        }
+
+        btn.innerHTML = `<span>📖 ${allUnitsData[key].title}</span> ${scoreBadge}`;
         btn.onclick = () => selectUnitAndStart(key);
         listEl.appendChild(btn);
       }
@@ -279,11 +246,18 @@
   }
 
   function selectUnitAndStart(unitKey) {
-    playerName = document.getElementById('player-name').value.trim();
-    if (!playerName) {
+    const nameInput = document.getElementById('player-name');
+    const typedName = nameInput.value.trim();
+    if (!typedName) {
       alert("먼저 학생 이름을 입력해 주세요! 😊");
       return;
     }
+    
+    // 이름 저장 (자동 로그인)
+    playerName = typedName;
+    localStorage.setItem("quizPlayerName", playerName);
+    nameInput.disabled = true; 
+
     selectedUnitKey = unitKey;
     currentQuestions = allUnitsData[unitKey].questions;
     currentIdx = 0;
@@ -307,10 +281,20 @@
 
     const optBox = document.getElementById('options-box');
     optBox.innerHTML = "";
-    q.options.forEach((opt, i) => {
+
+    // ★ 보기 무작위 섞기 기능 (정답 패턴 노출 방지)
+    let optionsWithAnswerFlag = q.options.map((opt, index) => {
+      return { text: opt, isCorrect: (index === q.ans) };
+    });
+    // 랜덤 정렬
+    optionsWithAnswerFlag.sort(() => Math.random() - 0.5);
+
+    // 섞인 보기를 버튼으로 만들기
+    optionsWithAnswerFlag.forEach((optObj) => {
       const btn = document.createElement('button');
-      btn.innerText = opt;
-      btn.onclick = () => checkAnswer(i);
+      btn.innerText = optObj.text;
+      // 인덱스 대신, 정답인지 아닌지 불리언(True/False) 값만 넘겨줌
+      btn.onclick = () => checkAnswer(optObj.isCorrect, q.exp);
       optBox.appendChild(btn);
     });
 
@@ -319,7 +303,7 @@
       updateTimerUI();
       if (timeLeft <= 0) {
         clearInterval(timerInterval);
-        handleTimeout();
+        handleTimeout(q.exp);
       }
     }, 1000);
   }
@@ -329,18 +313,16 @@
     document.getElementById('timer-fill').style.width = percent + "%";
   }
 
-  function checkAnswer(selectedIdx) {
+  function checkAnswer(isCorrect, exp) {
     clearInterval(timerInterval);
-    const q = currentQuestions[currentIdx];
     const feedback = document.getElementById('feedback-msg');
-    
     document.querySelectorAll('#options-box button').forEach(b => b.disabled = true);
 
-    if (selectedIdx === q.ans) {
+    if (isCorrect) {
       correctCount++;
-      score = correctCount * 20;
+      score = correctCount * 20; // 5문제 * 20점 = 100점 만점
       feedback.className = "feedback correct";
-      feedback.innerText = "⭕ " + q.exp;
+      feedback.innerText = "⭕ " + exp;
     } else {
       feedback.className = "feedback wrong";
       feedback.innerText = "❌ 아쉬워요! 정답을 다시 기억해 보세요.";
@@ -356,10 +338,12 @@
     }, 1500);
   }
 
-  function handleTimeout() {
+  function handleTimeout(exp) {
     const feedback = document.getElementById('feedback-msg');
+    document.querySelectorAll('#options-box button').forEach(b => b.disabled = true);
     feedback.className = "feedback wrong";
     feedback.innerText = "⏰ 시간 초과! 다음 문제로 넘어갑니다.";
+    
     setTimeout(() => {
       currentIdx++;
       if (currentIdx < currentQuestions.length) {
@@ -376,6 +360,12 @@
     document.getElementById('final-result-text').innerText = `${playerName} 학생의 점수는 ${score}점 / 100점!`;
     document.getElementById('ranking-title').innerText = `🏆 [${unitTitle}] 명예의 전당 Top 5`;
     
+    // ★ 내 점수 최고 기록 브라우저에 저장
+    if (!myBestScores[selectedUnitKey] || score > myBestScores[selectedUnitKey]) {
+      myBestScores[selectedUnitKey] = score;
+      localStorage.setItem("quizMyScores", JSON.stringify(myBestScores));
+    }
+
     saveScoreToFirebase(playerName, score, selectedUnitKey);
   }
 
@@ -421,11 +411,11 @@
   }
 
   function resetGame() {
-    document.getElementById('player-name').value = "";
+    // 단원별 점수가 업데이트된 화면을 다시 그려줌
+    renderUnitList();
     showScreen('start-screen');
   }
 
-  renderUnitList();
 </script>
 </body>
 </html>
